@@ -1,26 +1,159 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* SnapSweet — Vibrant Pop palette */
+  --cream: #fff8f0;
+  --cream-soft: #fef3e8;
+  --ink: #1a0b2e;
+  --ink-soft: #3d2461;
+
+  --pink: #ec4899;
+  --pink-light: #f9a8d4;
+  --orange: #fb923c;
+  --yellow: #facc15;
+  --violet: #a855f7;
+  --turquoise: #06b6d4;
+  --berry: #d946ef;
+  --lime: #84cc16;
+
+  --background: var(--cream);
+  --foreground: var(--ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --color-cream: var(--cream);
+  --color-cream-soft: var(--cream-soft);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-pink: var(--pink);
+  --color-pink-light: var(--pink-light);
+  --color-orange: var(--orange);
+  --color-yellow: var(--yellow);
+  --color-violet: var(--violet);
+  --color-turquoise: var(--turquoise);
+  --color-berry: var(--berry);
+  --color-lime: var(--lime);
+
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  background: var(--pink);
+  color: white;
+}
+
+/* Display headings — Fraunces variable */
+.font-display {
+  font-family: var(--font-fraunces), "Fraunces", Georgia, serif;
+  font-optical-sizing: auto;
+  font-variation-settings: "SOFT" 50, "WONK" 1;
+  letter-spacing: -0.025em;
+}
+
+/* Blob morphing — used behind hero and feature blocks */
+@keyframes morph {
+  0%,
+  100% {
+    border-radius: 42% 58% 70% 30% / 45% 30% 70% 55%;
+    transform: rotate(0deg) scale(1);
+  }
+  33% {
+    border-radius: 70% 30% 50% 50% / 30% 60% 40% 70%;
+    transform: rotate(15deg) scale(1.05);
+  }
+  66% {
+    border-radius: 30% 70% 35% 65% / 60% 40% 60% 40%;
+    transform: rotate(-10deg) scale(0.95);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.animate-morph {
+  animation: morph 14s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+/* Marquee */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+}
+
+/* Wobble for emoji on hover */
+@keyframes wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+
+.group:hover .group-hover\:animate-wobble {
+  animation: wobble 0.6s ease-in-out;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--cream-soft);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--pink), var(--violet));
+  border-radius: 999px;
+  border: 3px solid var(--cream-soft);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--berry), var(--turquoise));
+}
+
+/* Reset some defaults */
+button {
+  cursor: pointer;
+}
+
+/* Stripe-like noise texture overlay utility */
+.noise {
+  position: relative;
+}
+
+.noise::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.4'/></svg>");
+  opacity: 0.06;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  border-radius: inherit;
 }

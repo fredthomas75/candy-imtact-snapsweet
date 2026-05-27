@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SnapSweet 🍬
 
-## Getting Started
+> Guilt-Free Candy, Perfectly Portioned. Pods de bonbons 40-60 calories pré-portionnés, conçus au Québec.
 
-First, run the development server:
+Boutique en ligne transactionnelle pour la marque **SnapSweet** — pods de bonbons individuels (chocolat, gummies, caramel, fruité, éditions limitées) en livraison Canada-wide.
+
+## Stack
+
+- **Next.js 16** (App Router, Turbopack)
+- **React 19** · **TypeScript** · **Tailwind v4**
+- **Zustand** (panier persistant)
+- **Stripe Checkout** (paiement) avec fallback simulé
+- **Vercel** (hébergement, Fluid Compute par défaut)
+- Police : **Fraunces** (display) + **Inter** (sans)
+
+## Démarrer en local
 
 ```bash
+npm install
+cp .env.example .env.local
+# remplis STRIPE_SECRET_KEY (optionnel — sinon la commande est simulée)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+→ [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/
+├── page.tsx                  # Home — hero, marquee, pillars, featured, story
+├── menu/                     # Boutique avec filtres catégories
+├── produit/[slug]/           # Fiche produit (SSG via generateStaticParams)
+├── panier/                   # Panier client
+├── commande/                 # Tunnel de checkout
+│   └── success/              # Confirmation post-Stripe
+├── notre-histoire/           # Récit de marque
+├── livraison/                # Zones & délais
+└── api/checkout/route.ts     # POST → Stripe (prix server-side, idempotency)
 
-## Learn More
+components/
+├── pod.tsx                   # Visuel rond gradient signature
+├── header.tsx                # Sticky nav
+├── cart-button.tsx           # Badge panier (hydratation-safe)
+├── footer.tsx                # 4 colonnes
+├── product-card.tsx          # Card boutique
+├── add-to-cart.tsx           # Stepper + bouton
+├── category-filter.tsx       # Pills + grille
+└── clear-cart-on-mount.tsx   # Clear post-checkout
 
-To learn more about Next.js, take a look at the following resources:
+lib/
+├── utils.ts                  # cn() + formatPrice()
+├── shipping.ts               # Frais et seuils (serveur + client)
+├── products.ts               # 10 pods avec specs honnêtes
+├── cart.ts                   # Zustand store + persist
+└── stripe.ts                 # Client Stripe + URL fallback chain
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Variables d'environnement
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable | Requis | Description |
+|---|---|---|
+| `STRIPE_SECRET_KEY` | Optionnel | Clé secrète Stripe. Si absente, l'API renvoie une réponse simulée. |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Optionnel | Clé publique Stripe. |
+| `NEXT_PUBLIC_SITE_URL` | Optionnel | URL canonique du site. Fallback automatique via `VERCEL_URL`. |
 
-## Deploy on Vercel
+## Sécurité paiement
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- ✅ Prix résolus **serveur-side** dans `app/api/checkout/route.ts` — jamais trust le client
+- ✅ Quantité clampée `[1, 50]`
+- ✅ `idempotencyKey` Stripe basé sur hash SHA-256 du payload
+- ✅ `automatic_payment_methods: { enabled: true }` — Stripe choisit cartes / Apple Pay / Google Pay
+- ✅ Locale `fr-CA`, currency `CAD`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Déploiement Vercel
+
+```bash
+vercel link
+vercel deploy           # preview
+vercel deploy --prod    # production (après validation)
+```
+
+Configure ensuite dans **Vercel → Settings → Environment Variables** :
+- `STRIPE_SECRET_KEY` (production)
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_SITE_URL` (ton domaine custom)
+
+## Prochaines étapes
+
+- [ ] Brancher un webhook Stripe (`/api/webhooks/stripe`) pour le fulfillment réel
+- [ ] Ajouter Vercel Blob ou Cloudinary pour de vraies photos de pods
+- [ ] Brancher Klaviyo ou Resend pour l'email transactionnel
+- [ ] Configurer Vercel BotID sur `/api/checkout`
+- [ ] Domaine custom snapsweet.ca
+
+---
+
+🍬 Snap into sweetness. Né d'un atelier d'IA chez Talsom, mai 2026.
