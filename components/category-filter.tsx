@@ -2,12 +2,14 @@
 
 import { useState, useMemo } from "react";
 import ProductCard from "./product-card";
-import { categoryLabels, type Product } from "@/lib/products";
+import { type Product } from "@/lib/products";
+import { useDict } from "@/lib/i18n/dictionary-provider";
 import { cn } from "@/lib/utils";
 
 type Filter = Product["category"] | "tous" | "vegan";
 
 export default function CategoryFilter({ products }: { products: Product[] }) {
+  const { locale, dict } = useDict();
   const [filter, setFilter] = useState<Filter>("tous");
 
   const filtered = useMemo(() => {
@@ -17,12 +19,14 @@ export default function CategoryFilter({ products }: { products: Product[] }) {
   }, [products, filter]);
 
   const filters: { id: Filter; label: string }[] = [
-    { id: "tous", label: `Tous (${products.length})` },
-    ...Object.entries(categoryLabels).map(([id, label]) => ({
-      id: id as Filter,
-      label,
-    })),
-    { id: "vegan", label: "🌱 Vegan" },
+    { id: "tous", label: `${dict.menu.filterAll} (${products.length})` },
+    ...(Object.keys(dict.category) as Array<keyof typeof dict.category>).map(
+      (id) => ({
+        id: id as Filter,
+        label: dict.category[id],
+      })
+    ),
+    { id: "vegan", label: dict.menu.filterVegan },
   ];
 
   return (
@@ -46,14 +50,12 @@ export default function CategoryFilter({ products }: { products: Product[] }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filtered.map((p) => (
-          <ProductCard key={p.slug} product={p} />
+          <ProductCard key={p.slug} product={p} locale={locale} dict={dict} />
         ))}
       </div>
 
       {filtered.length === 0 && (
-        <p className="text-center text-ink/60 py-20">
-          Aucun pod ne correspond. Essaie un autre filtre.
-        </p>
+        <p className="text-center text-ink/60 py-20">{dict.menu.noResults}</p>
       )}
     </>
   );

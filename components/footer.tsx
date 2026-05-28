@@ -1,6 +1,14 @@
 import Link from "next/link";
+import type { Locale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionaries/fr";
 
-export default function Footer() {
+export default function Footer({
+  locale,
+  dict,
+}: {
+  locale: Locale;
+  dict: Dictionary;
+}) {
   return (
     <footer className="mt-24 bg-ink text-cream">
       <div className="mx-auto max-w-7xl px-5 sm:px-8 py-16 grid gap-10 sm:grid-cols-2 md:grid-cols-4">
@@ -19,44 +27,46 @@ export default function Footer() {
             <span className="font-display text-2xl">SnapSweet</span>
           </div>
           <p className="text-cream/70 text-sm leading-relaxed">
-            Pods de bonbons 40-60 calories pré-portionnés. Snap into sweetness — indulgence sans culpabilité, conçue au Québec.
+            {dict.footer.tagline}
           </p>
         </div>
 
         <div>
-          <h3 className="font-display text-lg mb-4">Boutique</h3>
+          <h3 className="font-display text-lg mb-4">{dict.footer.shop.title}</h3>
           <ul className="space-y-2 text-sm text-cream/70">
-            <li><Link href="/menu" className="hover:text-pink-light">Tous les pods</Link></li>
-            <li><Link href="/menu?cat=chocolat" className="hover:text-pink-light">Chocolat</Link></li>
-            <li><Link href="/menu?cat=gummies" className="hover:text-pink-light">Gummies</Link></li>
-            <li><Link href="/menu?cat=edition-limitee" className="hover:text-pink-light">Éditions limitées</Link></li>
+            <li><Link href={`/${locale}/menu`} className="hover:text-pink-light">{dict.footer.shop.all}</Link></li>
+            <li><Link href={`/${locale}/menu?cat=chocolat`} className="hover:text-pink-light">{dict.footer.shop.chocolate}</Link></li>
+            <li><Link href={`/${locale}/menu?cat=gummies`} className="hover:text-pink-light">{dict.footer.shop.gummies}</Link></li>
+            <li><Link href={`/${locale}/menu?cat=edition-limitee`} className="hover:text-pink-light">{dict.footer.shop.limited}</Link></li>
           </ul>
         </div>
 
         <div>
-          <h3 className="font-display text-lg mb-4">Maison</h3>
+          <h3 className="font-display text-lg mb-4">{dict.footer.house.title}</h3>
           <ul className="space-y-2 text-sm text-cream/70">
-            <li><Link href="/notre-histoire" className="hover:text-pink-light">Notre histoire</Link></li>
-            <li><Link href="/livraison" className="hover:text-pink-light">Livraison</Link></li>
-            <li><a href="mailto:bonjour@snapsweet.ca" className="hover:text-pink-light">Contact</a></li>
+            <li><Link href={`/${locale}/notre-histoire`} className="hover:text-pink-light">{dict.footer.house.story}</Link></li>
+            <li><Link href={`/${locale}/livraison`} className="hover:text-pink-light">{dict.footer.house.shipping}</Link></li>
+            <li><a href="mailto:bonjour@snapsweet.ca" className="hover:text-pink-light">{dict.footer.house.contact}</a></li>
           </ul>
         </div>
 
         <div>
-          <h3 className="font-display text-lg mb-4">Atelier</h3>
+          <h3 className="font-display text-lg mb-4">{dict.footer.studio.title}</h3>
           <p className="text-sm text-cream/70 leading-relaxed">
-            5520 rue Saint-Patrick<br />
-            Sud-Ouest, Montréal<br />
-            Du lundi au vendredi<br />
-            10h — 18h
+            {dict.footer.studio.lines.map((line, i) => (
+              <span key={i}>
+                {line}
+                {i < dict.footer.studio.lines.length - 1 && <br />}
+              </span>
+            ))}
           </p>
         </div>
       </div>
 
       <div className="border-t border-cream/10">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-cream/50">
-          <p>© 2026 SnapSweet — Tous droits réservés.</p>
-          <p>#SnapIntoSweetness · Né d'un atelier d'IA chez Talsom.</p>
+          <p>{dict.footer.legal}</p>
+          <p>{dict.footer.signature}</p>
         </div>
       </div>
     </footer>

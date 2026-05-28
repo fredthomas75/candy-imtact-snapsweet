@@ -2,23 +2,33 @@ import Link from "next/link";
 import { Pod } from "./pod";
 import { formatPrice } from "@/lib/utils";
 import type { Product } from "@/lib/products";
+import type { Locale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionaries/fr";
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({
+  product,
+  locale,
+  dict,
+}: {
+  product: Product;
+  locale: Locale;
+  dict: Dictionary;
+}) {
   return (
     <Link
-      href={`/produit/${product.slug}`}
+      href={`/${locale}/produit/${product.slug}`}
       className="group relative flex flex-col rounded-3xl bg-white p-6 shadow-sm hover:shadow-2xl transition-all hover:-translate-y-1 border border-ink/5 overflow-hidden"
     >
       {(product.isNew || product.isVegan) && (
         <div className="absolute top-4 right-4 flex flex-col gap-1.5 items-end z-10">
           {product.isNew && (
             <span className="rounded-full bg-yellow text-ink text-[10px] font-bold uppercase tracking-wider px-2.5 py-1">
-              Nouveau
+              {dict.common.new}
             </span>
           )}
           {product.isVegan && (
             <span className="rounded-full bg-lime/20 text-lime-700 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1">
-              Vegan
+              {dict.common.vegan}
             </span>
           )}
         </div>
@@ -35,21 +45,24 @@ export default function ProductCard({ product }: { product: Product }) {
       </div>
 
       <p className="text-xs uppercase tracking-wider text-ink/50 font-medium mb-1">
-        {product.tagline}
+        {product.tagline[locale]}
       </p>
       <h3 className="font-display text-2xl font-semibold tracking-tight mb-2">
-        {product.name}
+        {product.name[locale]}
       </h3>
       <p className="text-sm text-ink/65 line-clamp-2 mb-4 flex-1">
-        {product.description}
+        {product.description[locale]}
       </p>
 
       <div className="flex items-baseline justify-between pt-4 border-t border-ink/5">
         <div>
-          <p className="font-display text-xl font-semibold" style={{ color: product.accentColor }}>
-            {formatPrice(product.price)}
+          <p
+            className="font-display text-xl font-semibold"
+            style={{ color: product.accentColor }}
+          >
+            {formatPrice(product.price, locale)}
           </p>
-          <p className="text-[11px] text-ink/40 mt-0.5">{product.unit}</p>
+          <p className="text-[11px] text-ink/40 mt-0.5">{product.unit[locale]}</p>
         </div>
         <span className="text-xs font-medium text-ink/40 group-hover:text-pink transition-colors">
           {product.calories}

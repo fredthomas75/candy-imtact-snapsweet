@@ -3,13 +3,11 @@
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import {
-  useCart,
-  deliveryFor,
-  FREE_DELIVERY_THRESHOLD,
-} from "@/lib/cart";
+import { useCart, deliveryFor } from "@/lib/cart";
+import { productBySlug } from "@/lib/products";
 import { formatPrice } from "@/lib/utils";
 import { Pod } from "@/components/pod";
+import { useDict } from "@/lib/i18n/dictionary-provider";
 import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 
 type FormState = {
@@ -35,6 +33,7 @@ const initialForm: FormState = {
 };
 
 export default function CommandePage() {
+  const { locale, dict } = useDict();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -49,9 +48,9 @@ export default function CommandePage() {
 
   useEffect(() => {
     if (mounted && lines.length === 0) {
-      router.replace("/panier");
+      router.replace(`/${locale}/panier`);
     }
-  }, [mounted, lines.length, router]);
+  }, [mounted, lines.length, router, locale]);
 
   if (!mounted || lines.length === 0) {
     return (
@@ -80,25 +79,25 @@ export default function CommandePage() {
           body: JSON.stringify({
             lines: lines.map((l) => ({ slug: l.slug, quantity: l.quantity })),
             customer: form,
+            locale,
           }),
         });
 
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || "Erreur lors de la commande");
+          throw new Error(data.error || dict.checkout.error);
         }
 
         const data = await res.json();
 
         if (data.simulated) {
-          // No Stripe key — go to simulated success
           const params = new URLSearchParams({
             simulated: "1",
             email: form.email,
             total: String(data.total),
           });
           clear();
-          router.push(`/commande/success?${params.toString()}`);
+          router.push(`/${locale}/commande/success?${params.toString()}`);
           return;
         }
 
@@ -107,9 +106,9 @@ export default function CommandePage() {
           return;
         }
 
-        throw new Error("Réponse Stripe invalide");
+        throw new Error("Invalid Stripe response");
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Erreur inconnue");
+        setError(err instanceof Error ? err.message : "Unknown error");
       }
     });
   }
@@ -117,50 +116,46 @@ export default function CommandePage() {
   return (
     <div className="mx-auto max-w-6xl px-5 sm:px-8 py-12">
       <h1 className="font-display text-5xl sm:text-6xl font-semibold tracking-tight mb-3">
-        Passer ta commande.
+        {dict.checkout.title}
       </h1>
-      <p className="text-ink/60 mb-10">
-        Paiement sécurisé par Stripe · livraison Québec 24-48h
-      </p>
+      <p className="text-ink/60 mb-10">{dict.checkout.sub}</p>
 
       <form onSubmit={submit} className="grid lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-8">
           <section>
             <h2 className="font-display text-2xl font-semibold mb-5">
-              Coordonnées
+              {dict.checkout.sectionContact}
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="Courriel" type="email" required value={form.email} onChange={(v) => update("email", v)} full />
-              <Field label="Prénom" required value={form.prenom} onChange={(v) => update("prenom", v)} />
-              <Field label="Nom" required value={form.nom} onChange={(v) => update("nom", v)} />
+              <Field label={dict.checkout.fields.email} type="email" required value={form.email} onChange={(v) => update("email", v)} full />
+              <Field label={dict.checkout.fields.firstName} required value={form.prenom} onChange={(v) => update("prenom", v)} />
+              <Field label={dict.checkout.fields.lastName} required value={form.nom} onChange={(v) => update("nom", v)} />
             </div>
           </section>
 
           <section>
             <h2 className="font-display text-2xl font-semibold mb-5">
-              Adresse de livraison
+              {dict.checkout.sectionShipping}
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="Adresse" required value={form.adresse} onChange={(v) => update("adresse", v)} full />
-              <Field label="Ville" required value={form.ville} onChange={(v) => update("ville", v)} />
-              <Field label="Province" required value={form.province} onChange={(v) => update("province", v)} />
-              <Field label="Code postal" required value={form.codePostal} onChange={(v) => update("codePostal", v)} />
-              <Field label="Pays" required value={form.pays} onChange={(v) => update("pays", v)} />
+              <Field label={dict.checkout.fields.address} required value={form.adresse} onChange={(v) => update("adresse", v)} full />
+              <Field label={dict.checkout.fields.city} required value={form.ville} onChange={(v) => update("ville", v)} />
+              <Field label={dict.checkout.fields.province} required value={form.province} onChange={(v) => update("province", v)} />
+              <Field label={dict.checkout.fields.postal} required value={form.codePostal} onChange={(v) => update("codePostal", v)} />
+              <Field label={dict.checkout.fields.country} required value={form.pays} onChange={(v) => update("pays", v)} />
             </div>
           </section>
 
           <section>
             <h2 className="font-display text-2xl font-semibold mb-5">
-              Paiement
+              {dict.checkout.sectionPayment}
             </h2>
             <div className="rounded-2xl border border-ink/10 bg-white p-6 text-sm text-ink/70 leading-relaxed">
               <p className="flex items-center gap-2 font-medium text-ink mb-3">
                 <ShieldCheck className="h-4 w-4 text-lime" />
-                Paiement sécurisé Stripe — cartes, Apple Pay, Google Pay
+                {dict.checkout.paymentHero}
               </p>
-              <p>
-                À l'étape suivante, Stripe affichera un formulaire sécurisé pour entrer ta carte. Tes données ne transitent jamais par nos serveurs.
-              </p>
+              <p>{dict.checkout.paymentDesc}</p>
             </div>
           </section>
 
@@ -174,45 +169,53 @@ export default function CommandePage() {
         <aside className="lg:sticky lg:top-24 self-start">
           <div className="rounded-3xl bg-ink text-cream p-6 noise">
             <h2 className="font-display text-xl font-semibold mb-5">
-              Ta commande
+              {dict.checkout.orderSummary}
             </h2>
 
             <ul className="space-y-3 mb-5 max-h-64 overflow-y-auto pr-2">
-              {lines.map((line) => (
-                <li key={line.slug} className="flex items-center gap-3 text-sm">
-                  <Pod emoji={line.emoji} gradient={`radial-gradient(circle at 30% 30%, ${line.accentColor}, ${line.accentColor}40)`} size="xs" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{line.name}</p>
-                    <p className="text-cream/60 text-xs">x{line.quantity}</p>
-                  </div>
-                  <span className="tabular-nums text-cream/80">
-                    {formatPrice(line.price * line.quantity)}
-                  </span>
-                </li>
-              ))}
+              {lines.map((line) => {
+                const product = productBySlug(line.slug);
+                if (!product) return null;
+                return (
+                  <li key={line.slug} className="flex items-center gap-3 text-sm">
+                    <Pod
+                      emoji={product.emoji}
+                      gradient={`radial-gradient(circle at 30% 30%, ${product.accentColor}, ${product.accentColor}40)`}
+                      size="xs"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{product.name[locale]}</p>
+                      <p className="text-cream/60 text-xs">x{line.quantity}</p>
+                    </div>
+                    <span className="tabular-nums text-cream/80">
+                      {formatPrice(product.price * line.quantity, locale)}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
 
             <dl className="space-y-2 text-sm pt-4 border-t border-cream/10">
               <div className="flex justify-between">
-                <dt className="text-cream/70">Sous-total</dt>
-                <dd className="tabular-nums">{formatPrice(subtotal)}</dd>
+                <dt className="text-cream/70">{dict.cart.subtotal}</dt>
+                <dd className="tabular-nums">{formatPrice(subtotal, locale)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-cream/70">Livraison</dt>
+                <dt className="text-cream/70">{dict.cart.delivery}</dt>
                 <dd className="tabular-nums">
                   {shipping === 0 ? (
-                    <span className="text-lime">Gratuite</span>
+                    <span className="text-lime">{dict.cart.free}</span>
                   ) : (
-                    formatPrice(shipping)
+                    formatPrice(shipping, locale)
                   )}
                 </dd>
               </div>
             </dl>
 
             <div className="border-t border-cream/15 mt-4 pt-4 flex justify-between items-baseline">
-              <span className="font-display text-lg">Total</span>
+              <span className="font-display text-lg">{dict.cart.total}</span>
               <span className="font-display text-3xl font-semibold tabular-nums">
-                {formatPrice(total)}
+                {formatPrice(total, locale)}
               </span>
             </div>
 
@@ -223,20 +226,20 @@ export default function CommandePage() {
             >
               {isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Redirection...
+                  <Loader2 className="h-4 w-4 animate-spin" /> {dict.checkout.redirecting}
                 </>
               ) : (
                 <>
-                  Payer {formatPrice(total)} <ArrowRight className="h-4 w-4" />
+                  {dict.checkout.payCta} {formatPrice(total, locale)} <ArrowRight className="h-4 w-4" />
                 </>
               )}
             </button>
 
             <Link
-              href="/panier"
+              href={`/${locale}/panier`}
               className="mt-3 w-full inline-flex items-center justify-center gap-2 text-sm text-cream/70 hover:text-pink-light transition-colors"
             >
-              Modifier mon panier
+              {dict.checkout.modifyCart}
             </Link>
           </div>
         </aside>

@@ -2,19 +2,17 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Product } from "./products";
+import { productBySlug, type Product } from "./products";
 import { DELIVERY_FEE, FREE_DELIVERY_THRESHOLD, CURRENCY } from "./shipping";
 
 export { DELIVERY_FEE, FREE_DELIVERY_THRESHOLD, CURRENCY };
 
+// Stored cart line: only the slug + quantity.
+// Display data (name, price, emoji, color) is resolved from products at render time
+// so translations and pricing stay in sync without rehydrating storage.
 export type CartLine = {
   slug: string;
-  name: string;
-  price: number;
-  unit: string;
   quantity: number;
-  emoji: string;
-  accentColor: string;
 };
 
 type CartState = {
@@ -48,12 +46,7 @@ export const useCart = create<CartState>()(
               ...state.lines,
               {
                 slug: product.slug,
-                name: product.name,
-                price: product.price,
-                unit: product.unit,
                 quantity: Math.min(50, Math.max(1, qty)),
-                emoji: product.emoji,
-                accentColor: product.accentColor,
               },
             ],
           };
@@ -67,16 +60,21 @@ export const useCart = create<CartState>()(
           }
           return {
             lines: state.lines.map((l) =>
-              l.slug === slug ? { ...l, quantity: Math.min(50, Math.floor(qty)) } : l
+              l.slug === slug
+                ? { ...l, quantity: Math.min(50, Math.floor(qty)) }
+                : l
             ),
           };
         }),
       clear: () => set({ lines: [] }),
       count: () => get().lines.reduce((sum, l) => sum + l.quantity, 0),
       subtotal: () =>
-        get().lines.reduce((sum, l) => sum + l.price * l.quantity, 0),
+        get().lines.reduce((sum, l) => {
+          const product = productBySlug(l.slug);
+          return sum + (product?.price ?? 0) * l.quantity;
+        }, 0),
     }),
-    { name: "snapsweet-cart" }
+    { name: "snapsweet-cart", version: 2 }
   )
 );
 

@@ -4,8 +4,11 @@ import { useState } from "react";
 import { Minus, Plus, Check, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart";
 import type { Product } from "@/lib/products";
+import { useDict } from "@/lib/i18n/dictionary-provider";
+import { formatPrice } from "@/lib/utils";
 
 export default function AddToCart({ product }: { product: Product }) {
+  const { locale, dict } = useDict();
   const add = useCart((s) => s.add);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
@@ -23,7 +26,7 @@ export default function AddToCart({ product }: { product: Product }) {
           type="button"
           onClick={() => setQty((q) => Math.max(1, q - 1))}
           className="h-12 w-12 grid place-items-center text-ink/60 hover:text-ink"
-          aria-label="Diminuer la quantité"
+          aria-label={dict.cart.decreaseAria}
         >
           <Minus className="h-4 w-4" />
         </button>
@@ -32,7 +35,7 @@ export default function AddToCart({ product }: { product: Product }) {
           type="button"
           onClick={() => setQty((q) => Math.min(50, q + 1))}
           className="h-12 w-12 grid place-items-center text-ink/60 hover:text-ink"
-          aria-label="Augmenter la quantité"
+          aria-label={dict.cart.increaseAria}
         >
           <Plus className="h-4 w-4" />
         </button>
@@ -50,11 +53,13 @@ export default function AddToCart({ product }: { product: Product }) {
       >
         {added ? (
           <>
-            <Check className="h-5 w-5" /> Ajouté au panier
+            <Check className="h-5 w-5" />
+            {locale === "fr" ? "Ajouté au panier" : "Added to cart"}
           </>
         ) : (
           <>
-            <ShoppingBag className="h-5 w-5" /> Ajouter — {(product.price * qty).toFixed(2)} $
+            <ShoppingBag className="h-5 w-5" />
+            {locale === "fr" ? "Ajouter" : "Add"} — {formatPrice(product.price * qty, locale)}
           </>
         )}
       </button>
