@@ -60,8 +60,9 @@ lib/
 
 | Variable | Requis | Description |
 |---|---|---|
-| `STRIPE_SECRET_KEY` | Optionnel | Clé secrète Stripe. Si absente, l'API renvoie une réponse simulée. |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Optionnel | Clé publique Stripe. |
+| `STRIPE_SECRET_KEY` | Optionnel | Clé secrète Stripe (`sk_test_...` ou `sk_live_...`). Si absente, l'API renvoie une réponse simulée. |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Optionnel | Clé publique Stripe (`pk_test_...` ou `pk_live_...`). |
+| `STRIPE_WEBHOOK_SECRET` | Pour webhook | Secret de signature webhook (`whsec_...`). Fourni par `stripe listen` ou le dashboard. |
 | `NEXT_PUBLIC_SITE_URL` | Optionnel | URL canonique du site. Fallback automatique via `VERCEL_URL`. |
 
 ## Sécurité paiement
@@ -69,8 +70,33 @@ lib/
 - ✅ Prix résolus **serveur-side** dans `app/api/checkout/route.ts` — jamais trust le client
 - ✅ Quantité clampée `[1, 50]`
 - ✅ `idempotencyKey` Stripe basé sur hash SHA-256 du payload
-- ✅ `automatic_payment_methods: { enabled: true }` — Stripe choisit cartes / Apple Pay / Google Pay
+- ✅ `payment_method_types` auto — Stripe choisit cartes / Apple Pay / Google Pay selon le dashboard
+- ✅ Webhook signature vérifiée via `constructEventAsync()` avant tout traitement
 - ✅ Locale `fr-CA`, currency `CAD`
+
+## Tester le paiement Stripe en local
+
+1. Mets tes clés de test dans `.env.local` (voir `.env.example`).
+2. Dans un terminal séparé, forward les webhooks vers ton dev server :
+
+   ```bash
+   stripe login
+   stripe listen --forward-to localhost:3000/api/webhooks/stripe
+   ```
+
+   Le CLI affiche un `whsec_...` — colle-le dans `STRIPE_WEBHOOK_SECRET` de `.env.local`.
+
+3. Relance `npm run dev` et passe une commande avec une carte de test :
+
+   | Carte | Numéro | Résultat |
+   |---|---|---|
+   | Visa OK | `4242 4242 4242 4242` | Paiement réussi |
+   | Visa refus | `4000 0000 0000 0002` | Refusée |
+   | 3DS obligatoire | `4000 0027 6000 3184` | Demande authentification |
+
+   N'importe quelle date future · CVC à 3 chiffres · code postal `H2X 1Y4`.
+
+4. Tu verras dans les logs `[stripe-webhook] ✅ checkout.session.completed`.
 
 ## Déploiement Vercel
 
@@ -80,16 +106,27 @@ vercel deploy           # preview
 vercel deploy --prod    # production (après validation)
 ```
 
-Configure ensuite dans **Vercel → Settings → Environment Variables** :
-- `STRIPE_SECRET_KEY` (production)
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-- `NEXT_PUBLIC_SITE_URL` (ton domaine custom)
+Pour configurer les variables :
+
+```bash
+vercel env add STRIPE_SECRET_KEY preview
+vercel env add STRIPE_SECRET_KEY production
+vercel env add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY preview production
+vercel env add STRIPE_WEBHOOK_SECRET production
+```
+
+Puis dashboard.stripe.com → Developers → Webhooks → **Add endpoint** sur
+`https://<ton-domaine>/api/webhooks/stripe`, sélectionner les événements :
+`checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+`checkout.session.async_payment_failed`, `checkout.session.expired`,
+`payment_intent.payment_failed`.
 
 ## Prochaines étapes
 
-- [ ] Brancher un webhook Stripe (`/api/webhooks/stripe`) pour le fulfillment réel
+- [x] ~~Brancher un webhook Stripe~~ ✅ Fait
+- [ ] Persister les commandes (DB) au lieu de juste logger
+- [ ] Brancher Resend ou Klaviyo pour l'email de confirmation
 - [ ] Ajouter Vercel Blob ou Cloudinary pour de vraies photos de pods
-- [ ] Brancher Klaviyo ou Resend pour l'email transactionnel
 - [ ] Configurer Vercel BotID sur `/api/checkout`
 - [ ] Domaine custom snapsweet.ca
 
